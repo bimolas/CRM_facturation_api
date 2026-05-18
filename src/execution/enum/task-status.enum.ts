@@ -1,0 +1,6 @@
+export enum TaskStatus {
+  BACKLOG = 'BACKLOG',
+  IN_DEVELOPMENT = 'IN_DEVELOPMENT',
+  REVIEW = 'REVIEW',
+  COMPLETED = 'COMPLETED',
+}
