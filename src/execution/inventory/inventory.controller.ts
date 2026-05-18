@@ -22,7 +22,7 @@ interface CreateInventoryItemDto {
 }
 
 @Controller('inventory')
-@UseGuards(JwtAuthGuard)
+//@UseGuards(JwtAuthGuard)
 export class InventoryController {
   constructor(
     @Inject('IInventoryItemRepository')

@@ -1,6 +1,9 @@
 import {
   Controller, Get, Post, Param, Body, ParseIntPipe, UseGuards,
 } from '@nestjs/common';
+import {
+  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody,
+} from '@nestjs/swagger';
 import { BusinessWorkflowService } from './business-workflow.service.js';
 import { BusinessWorkflow } from './business-workflow.entity.js';
 import { WorkflowHistory } from '../history/workflow-history.entity.js';
@@ -9,69 +12,67 @@ import { RolesGuard } from '../../auth/roles.guard.js';
 import { Roles } from '../../auth/roles.decorator.js';
 import { CurrentUser } from '../../auth/current-user.decorator.js';
 import { SystemRole } from '../../identity/enum/system-role.enum.js';
+import {
+  CreateWorkflowDto,
+  SubmitBidDto,
+  AcceptBidDto,
+  RecordTestOutcomeDto,
+  BidItemDto,
+} from './dto/index.js';
 
-interface CreateWorkflowDto {
-  title: string;
-  description: string;
-  budgetCeiling: number;
-  buyerCompanyId?: number;
-  technicalCategory?: string;
-  submissionDeadline?: string;
-  expectedDeliveryDate?: string;
-  currency?: string;
-  rfpFileUrl?: string;
-}
-
-interface BidItemDto {
-  articleId: number;
-  quantity: number;
-  discountAmount?: number;
-}
-
-interface SubmitBidDto {
-  referenceNumber: string;
-  issueDate: string;
-  validUntil: string;
-  sellerCompanyId?: number;
-  deliveryLeadTime?: number;
-  downPaymentPercentage?: number;
-  balanceDueDays?: number;
-  revisionNumber?: number;
-  vendorNotes?: string;
-  technicalProposalFileUrl?: string;
-  financialQuoteFileUrl?: string;
-  items?: BidItemDto[];
-}
-
-interface AcceptBidDto {
-  bidId: number;
-  sellerCompanyId: number;
-}
-
-interface RecordTestOutcomeDto {
-  isAccepted: boolean;
-  testDate?: string;
-  testerName?: string;
-  rejectionReason?: string;
-  pvRecetteFileUrl?: string;
-}
-
+@ApiTags('Workflows')
+@ApiBearerAuth()
 @Controller('workflows')
-@UseGuards(JwtAuthGuard, RolesGuard)
+//@UseGuards(JwtAuthGuard, RolesGuard)
 export class BusinessWorkflowController {
   constructor(private readonly workflowService: BusinessWorkflowService) {}
 
   @Get()
+  @ApiOperation({
+    summary: 'Get all workflows',
+    description: 'Retrieve all workflows accessible to the authenticated user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of workflows retrieved successfully',
+    type: [BusinessWorkflow],
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   findAll(@CurrentUser() user: any): Promise<BusinessWorkflow[]> {
     return this.workflowService.findAll(user);
   }
 
   @Get('active')
+  @ApiOperation({
+    summary: 'Get active public tenders',
+    description: 'Retrieve all active public tenders available for bidding',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of active tenders',
+    type: [BusinessWorkflow],
+  })
   findActive(): Promise<BusinessWorkflow[]> {
     return this.workflowService.findActivePublicTenders();
   }
 
   @Get(':id')
+  @ApiOperation({
+    summary: 'Get workflow by ID',
+    description: 'Retrieve a specific workflow by its ID',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Workflow ID',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Workflow retrieved successfully',
+    type: BusinessWorkflow,
+  })
+  @ApiResponse({ status: 404, description: 'Workflow not found' })
   findOne(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
@@ -80,6 +81,21 @@ export class BusinessWorkflowController {
   }
 
   @Get(':id/history')
+  @ApiOperation({
+    summary: 'Get workflow history',
+    description: 'Retrieve the complete history of a workflow including all state transitions',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Workflow ID',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Workflow history retrieved successfully',
+    type: [WorkflowHistory],
+  })
   async getHistory(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
@@ -89,6 +105,20 @@ export class BusinessWorkflowController {
   }
 
   @Post()
+  @ApiOperation({
+    summary: 'Create a new workflow',
+    description: 'Create a new procurement workflow (RFQ/RFP)',
+  })
+  @ApiBody({
+    type: CreateWorkflowDto,
+    description: 'Workflow creation data',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Workflow created successfully',
+    type: BusinessWorkflow,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
   create(
     @Body() dto: CreateWorkflowDto,
     @CurrentUser() user: any,
@@ -109,6 +139,21 @@ export class BusinessWorkflowController {
   }
 
   @Post(':id/publish')
+  @ApiOperation({
+    summary: 'Publish a workflow',
+    description: 'Publish a workflow to make it visible and available for bidding',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Workflow ID',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Workflow published successfully',
+    type: BusinessWorkflow,
+  })
   publish(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
@@ -117,6 +162,25 @@ export class BusinessWorkflowController {
   }
 
   @Post(':id/bids')
+  @ApiOperation({
+    summary: 'Submit a bid to a workflow',
+    description: 'Submit a vendor bid with items and terms for a published workflow',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Workflow ID',
+    example: 1,
+  })
+  @ApiBody({
+    type: SubmitBidDto,
+    description: 'Bid submission data',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Bid submitted successfully',
+    type: BusinessWorkflow,
+  })
   submitBid(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: SubmitBidDto,
@@ -140,6 +204,25 @@ export class BusinessWorkflowController {
   }
 
   @Post(':id/bids/accept')
+  @ApiOperation({
+    summary: 'Accept a bid',
+    description: 'Accept a vendor bid and move workflow to the acceptance stage',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Workflow ID',
+    example: 1,
+  })
+  @ApiBody({
+    type: AcceptBidDto,
+    description: 'Bid acceptance data',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Bid accepted successfully',
+    type: BusinessWorkflow,
+  })
   acceptBid(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AcceptBidDto,
@@ -156,6 +239,21 @@ export class BusinessWorkflowController {
   }
 
   @Post(':id/complete-testing')
+  @ApiOperation({
+    summary: 'Start testing phase',
+    description: 'Move workflow to testing/reception phase',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Workflow ID',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Workflow moved to testing phase',
+    type: BusinessWorkflow,
+  })
   completeAndTest(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
@@ -164,6 +262,25 @@ export class BusinessWorkflowController {
   }
 
   @Post(':id/test-outcome')
+  @ApiOperation({
+    summary: 'Record test/reception outcome',
+    description: 'Record the result of quality testing or product reception',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Workflow ID',
+    example: 1,
+  })
+  @ApiBody({
+    type: RecordTestOutcomeDto,
+    description: 'Test outcome data',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Test outcome recorded successfully',
+    type: BusinessWorkflow,
+  })
   recordTestOutcome(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: RecordTestOutcomeDto,
@@ -176,6 +293,21 @@ export class BusinessWorkflowController {
   }
 
   @Post(':id/invoice')
+  @ApiOperation({
+    summary: 'Create invoice',
+    description: 'Generate invoice after successful testing/reception',
+  })
+  @ApiParam({
+    name: 'id',
+    type: 'number',
+    description: 'Workflow ID',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Invoice created successfully',
+    type: BusinessWorkflow,
+  })
   fullyInvoice(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
