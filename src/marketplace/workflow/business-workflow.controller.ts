@@ -1,8 +1,8 @@
 import {
-  Controller, Get, Post, Param, Body, ParseIntPipe, UseGuards,
+  Controller, Get, Post, Patch, Param, Body, ParseIntPipe, Query, UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody,
+  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiQuery,
 } from '@nestjs/swagger';
 import { BusinessWorkflowService } from './business-workflow.service.js';
 import { BusinessWorkflow } from './business-workflow.entity.js';
@@ -12,6 +12,7 @@ import { RolesGuard } from '../../auth/roles.guard.js';
 import { Roles } from '../../auth/roles.decorator.js';
 import { CurrentUser } from '../../auth/current-user.decorator.js';
 import { SystemRole } from '../../identity/enum/system-role.enum.js';
+import { Devis } from '../../finance/devis/devis.entity.js';
 import {
   CreateWorkflowDto,
   SubmitBidDto,
@@ -23,7 +24,7 @@ import {
 @ApiTags('Workflows')
 @ApiBearerAuth()
 @Controller('workflows')
-//@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class BusinessWorkflowController {
   constructor(private readonly workflowService: BusinessWorkflowService) {}
 
@@ -32,14 +33,18 @@ export class BusinessWorkflowController {
     summary: 'Get all workflows',
     description: 'Retrieve all workflows accessible to the authenticated user',
   })
+  @ApiQuery({ name: 'mine', required: false, type: Boolean, description: 'When true, return only workflows where the user is the buyer' })
   @ApiResponse({
     status: 200,
     description: 'List of workflows retrieved successfully',
     type: [BusinessWorkflow],
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  findAll(@CurrentUser() user: any): Promise<BusinessWorkflow[]> {
-    return this.workflowService.findAll(user);
+  findAll(
+    @CurrentUser() user: any,
+    @Query('mine') mine?: string,
+  ): Promise<BusinessWorkflow[]> {
+    return this.workflowService.findAll(user, mine === 'true');
   }
 
   @Get('active')
@@ -47,13 +52,41 @@ export class BusinessWorkflowController {
     summary: 'Get active public tenders',
     description: 'Retrieve all active public tenders available for bidding',
   })
+  @ApiQuery({ name: 'technicalCategory', required: false, type: String })
+  @ApiQuery({ name: 'budgetCeiling', required: false, type: Number })
+  @ApiQuery({ name: 'region', required: false, type: String })
+  @ApiQuery({ name: 'createdAfter', required: false, type: String, description: 'ISO date string' })
   @ApiResponse({
     status: 200,
     description: 'List of active tenders',
     type: [BusinessWorkflow],
   })
-  findActive(): Promise<BusinessWorkflow[]> {
-    return this.workflowService.findActivePublicTenders();
+  findActive(
+    @Query('technicalCategory') technicalCategory?: string,
+    @Query('budgetCeiling') budgetCeiling?: string,
+    @Query('region') region?: string,
+    @Query('createdAfter') createdAfter?: string,
+  ): Promise<BusinessWorkflow[]> {
+    return this.workflowService.findActivePublicTenders({
+      technicalCategory,
+      budgetCeiling: budgetCeiling !== undefined ? Number(budgetCeiling) : undefined,
+      region,
+      createdAfter,
+    });
+  }
+
+  @Get('contracts')
+  @ApiOperation({
+    summary: 'List contracts',
+    description: 'Return all workflows in contract states (IN_PROGRESS, UNDER_TEST, FULLY_INVOICED) for the current user\'s company',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of contracts',
+    type: [BusinessWorkflow],
+  })
+  listContracts(@CurrentUser() user: any): Promise<BusinessWorkflow[]> {
+    return this.workflowService.listContracts(user.companyId, user.role);
   }
 
   @Get(':id')
@@ -102,6 +135,88 @@ export class BusinessWorkflowController {
   ): Promise<WorkflowHistory[]> {
     await this.workflowService.findOne(id, user); // Enforces view authorization check
     return this.workflowService.findHistory(id);
+  }
+
+  @Get(':id/bids')
+  @ApiOperation({
+    summary: 'List bids for a workflow',
+    description: 'Return all bids submitted to a workflow. Only accessible by the buyer company or platform admin.',
+  })
+  @ApiParam({ name: 'id', type: 'number', description: 'Workflow ID' })
+  @ApiResponse({ status: 200, description: 'List of bids', type: [Devis] })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  listBids(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: any,
+  ): Promise<Devis[]> {
+    return this.workflowService.listBids(id, user.companyId, user.role);
+  }
+
+  @Get(':id/contract')
+  @ApiOperation({
+    summary: 'Get contract detail',
+    description: 'Return full contract detail for a workflow. Only accessible by involved companies or platform admin.',
+  })
+  @ApiParam({ name: 'id', type: 'number', description: 'Workflow ID' })
+  @ApiResponse({ status: 200, description: 'Contract detail' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  getContractDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: any,
+  ): Promise<object> {
+    return this.workflowService.getContractDetail(id, user.companyId, user.role);
+  }
+
+  @Post(':id/bids/:bidId/reject')
+  @ApiOperation({
+    summary: 'Reject a bid',
+    description: 'Reject a specific bid on a workflow. Only the buyer company or platform admin can reject bids.',
+  })
+  @ApiParam({ name: 'id', type: 'number', description: 'Workflow ID' })
+  @ApiParam({ name: 'bidId', type: 'number', description: 'Bid ID' })
+  @ApiBody({ schema: { properties: { rejectionReason: { type: 'string' } } } })
+  @ApiResponse({ status: 200, description: 'Bid rejected successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'Bid not found' })
+  rejectBid(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('bidId', ParseIntPipe) bidId: number,
+    @Body() body: { rejectionReason?: string },
+    @CurrentUser() user: any,
+  ): Promise<Devis> {
+    return this.workflowService.rejectBid(id, bidId, user.userId, user.companyId, user.role, body.rejectionReason);
+  }
+
+  @Post(':id/bc/confirm')
+  @ApiOperation({
+    summary: 'Confirm the Bon de Commande',
+    description: 'Seller confirms the BC to establish the contract. Only the chosen seller company or platform admin can confirm.',
+  })
+  @ApiParam({ name: 'id', type: 'number', description: 'Workflow ID' })
+  @ApiResponse({ status: 200, description: 'BC confirmed and contract established', type: BusinessWorkflow })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'BC not found' })
+  confirmBC(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: any,
+  ): Promise<BusinessWorkflow> {
+    return this.workflowService.confirmBC(id, user.userId, user.companyId, user.role);
+  }
+
+  @Patch(':id/contract/progress')
+  @ApiOperation({
+    summary: 'Advance contract progress',
+    description: 'Increment the contract progress step. Only the chosen seller company or platform admin can advance progress.',
+  })
+  @ApiParam({ name: 'id', type: 'number', description: 'Workflow ID' })
+  @ApiResponse({ status: 200, description: 'Progress advanced', type: BusinessWorkflow })
+  @ApiResponse({ status: 400, description: 'Already at final step' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  advanceProgress(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: any,
+  ): Promise<BusinessWorkflow> {
+    return this.workflowService.advanceProgress(id, user.userId, user.companyId, user.role);
   }
 
   @Post()

@@ -1,5 +1,6 @@
-import { ChildEntity, Column } from 'typeorm';
+import { ChildEntity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Document } from '../common/document.entity.js';
+import { Devis } from '../devis/devis.entity.js';
 
 @ChildEntity('BC')
 export class BonDeCommande extends Document {
@@ -26,6 +27,23 @@ export class BonDeCommande extends Document {
 
   @Column({ type: 'date', nullable: true, name: 'estimated_delivery_date' })
   estimatedDeliveryDate: Date;
+
+  // ─── Copied from accepted Devis (Requirement 4.3) ─────────────────────────
+
+  @Column({ type: 'int', nullable: true, name: 'delivery_lead_time' })
+  deliveryLeadTime: number | null;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, name: 'down_payment_percentage' })
+  downPaymentPercentage: number | null;
+
+  @Column({ type: 'int', nullable: true, name: 'balance_due_days' })
+  balanceDueDays: number | null;
+
+  // ─── Link to the accepted bid ─────────────────────────────────────────────
+
+  @ManyToOne(() => Devis, { nullable: true, eager: false, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'accepted_devis_id' })
+  acceptedDevis: Devis | null;
 
   constructor(partial?: Partial<BonDeCommande>) {
     super();

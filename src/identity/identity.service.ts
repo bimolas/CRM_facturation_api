@@ -62,4 +62,12 @@ export class IdentityService {
       return { company: savedCompany, user: savedUser };
     });
   }
+
+  async getUser(id: number): Promise<User | null> {
+    return this.dataSource.getRepository(User).findOneBy({ id });
+  }
+
+  async getCompany(id: number): Promise<Company | null> {
+    return this.dataSource.getRepository(Company).findOneBy({ id });
+  }
 }

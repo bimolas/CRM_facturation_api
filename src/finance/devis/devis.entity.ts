@@ -35,6 +35,22 @@ export class Devis extends Document {
   @Column({ type: 'varchar', length: 500, nullable: true, name: 'financial_quote_file_url' })
   financialQuoteFileUrl: string | null;
 
+  // ─── Bid lifecycle status ─────────────────────────────────────────────────
+
+  @Column({
+    type: 'enum',
+    enum: ['SUBMITTED', 'NEGOTIATING', 'BC_PENDING_VENDOR', 'CONTRACT_ESTABLISHED', 'REJECTED'],
+    default: 'SUBMITTED',
+    name: 'bid_status',
+  })
+  bidStatus: 'SUBMITTED' | 'NEGOTIATING' | 'BC_PENDING_VENDOR' | 'CONTRACT_ESTABLISHED' | 'REJECTED';
+
+  @Column({ default: false, name: 'is_rejected' })
+  isRejected: boolean;
+
+  @Column({ type: 'text', nullable: true, name: 'rejection_reason' })
+  rejectionReason: string | null;
+
   constructor(partial?: Partial<Devis>) {
     super();
     Object.assign(this, partial);

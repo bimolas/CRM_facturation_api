@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDateString, IsIn, IsArray } from 'class-validator';
 
 export class CreateWorkflowDto {
   @ApiProperty({
@@ -70,15 +70,90 @@ export class CreateWorkflowDto {
   @IsOptional()
   @IsString()
   rfpFileUrl?: string;
+
+  @ApiProperty({
+    description: 'Type of workflow: material, service, or subscription',
+    example: 'service',
+  })
+  @IsString()
+  @IsIn(['material', 'service', 'subscription'])
+  workflowType: string;
+
+  @ApiPropertyOptional({
+    description: 'Geographic region for the workflow',
+    example: 'Casablanca-Settat',
+  })
+  @IsOptional()
+  @IsString()
+  region?: string;
+
+  @ApiPropertyOptional({
+    description: 'List of technical or functional requirements',
+    example: ['ISO 9001 certified', 'Delivery within 30 days'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  requirements?: string[];
+
+  @ApiPropertyOptional({
+    description: 'List of constraints applicable to the workflow',
+    example: ['No subcontracting allowed', 'Local suppliers only'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  constraints?: string[];
+
+  @ApiPropertyOptional({
+    description: 'General conditions for the workflow',
+    example: 'Payment within 60 days of delivery.',
+  })
+  @IsOptional()
+  @IsString()
+  conditions?: string;
+
+  @ApiPropertyOptional({
+    description: 'Criteria used to evaluate bids',
+    example: 'Price 60%, Technical quality 40%',
+  })
+  @IsOptional()
+  @IsString()
+  evaluationCriteria?: string;
 }
 
 export class BidItemDto {
-  @ApiProperty({
-    description: 'Article ID for the bid item',
+  @ApiPropertyOptional({
+    description: 'Article ID for the bid item when it comes from the catalog',
     example: 5,
   })
+  @IsOptional()
   @IsNumber()
-  articleId: number;
+  articleId?: number;
+
+  @ApiPropertyOptional({
+    description: 'Fallback service or item name for custom lines',
+    example: 'Custom installation service',
+  })
+  @IsOptional()
+  @IsString()
+  serviceName?: string;
+
+  @ApiPropertyOptional({
+    description: 'Unit price excluding tax for custom lines',
+    example: 2500,
+  })
+  @IsOptional()
+  @IsNumber()
+  unitPriceHT?: number;
+
+  @ApiPropertyOptional({
+    description: 'VAT rate for custom lines',
+    example: 20,
+  })
+  @IsOptional()
+  @IsNumber()
+  appliedTvaRate?: number;
 
   @ApiProperty({
     description: 'Quantity of the article',
@@ -167,7 +242,7 @@ export class SubmitBidDto {
   vendorNotes?: string;
 
   @ApiPropertyOptional({
-    description: 'URL to technical proposal file',
+    description: 'URL or local reference to technical proposal file',
     example: 'https://example.com/technical-proposal.pdf',
   })
   @IsOptional()
@@ -175,7 +250,7 @@ export class SubmitBidDto {
   technicalProposalFileUrl?: string;
 
   @ApiPropertyOptional({
-    description: 'URL to financial quote file',
+    description: 'URL or local reference to financial quote file',
     example: 'https://example.com/quote.pdf',
   })
   @IsOptional()

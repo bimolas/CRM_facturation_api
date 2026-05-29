@@ -10,6 +10,15 @@ import { DomainServicesModule } from './domain-services/domain-services.module.j
 import { CatalogModule } from './catalog/catalog.module.js';
 import { NotificationModule } from './notification/notification.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { MessageModule } from './message/message.module.js';
+import { NegotiationModule } from './contracting/negotiation/negotiation.module.js';
+import { TeamsModule } from './teams/team.module.js';
+import { WorkItemModule } from './contracting/work-item/work-item.module.js';
+import { CalendarModule } from './calendar/calendar.module.js';
+import { BidModule } from './contracting/bid/bid.module.js';
+import { UploadModule } from './upload/upload.module.js';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 // ─── Entities (explicit list — required for nodenext module resolution) ───────
 import { Company } from './identity/company/company.entity.js';
@@ -29,6 +38,15 @@ import { Category } from './catalog/category/category.entity.js';
 import { Article } from './catalog/article/article.entity.js';
 import { Notification } from './notification/notification.entity.js';
 import { ProjectMilestone } from './execution/milestone/project-milestone.entity.js';
+import { Message } from './message/message.entity.js';
+import { NegotiationMessage } from './contracting/negotiation/negotiation-message.entity.js';
+import { Team } from './teams/team.entity.js';
+import { TeamMember } from './teams/team-member.entity.js';
+import { WorkItem } from './contracting/work-item/work-item.entity.js';
+import { Task } from './contracting/task/task.entity.js';
+import { Holiday } from './calendar/holiday.entity.js';
+import { CalendarEvent } from './calendar/calendar-event.entity.js';
+import { PaymentInstallment } from './contracting/payment/payment-installment.entity.js';
 
 @Module({
   imports: [
@@ -58,11 +76,23 @@ import { ProjectMilestone } from './execution/milestone/project-milestone.entity
         Article,
         Notification,
         ProjectMilestone,
+        Message,
+        NegotiationMessage,
+        Team,
+        TeamMember,
+        WorkItem,
+        Task,
+        Holiday,
+        CalendarEvent,
+        PaymentInstallment,
       ],
-      synchronize: true,   // Auto-sync schema — disable before production
+      synchronize: process.env.TYPEORM_SYNCHRONIZE === 'true',
       logging: process.env.NODE_ENV !== 'production',
     }),
-
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
 
     // ── Feature Modules ───────────────────────────────────────────────────
     DomainServicesModule,
@@ -73,6 +103,13 @@ import { ProjectMilestone } from './execution/milestone/project-milestone.entity
     CatalogModule,
     NotificationModule,
     AuthModule,
+    MessageModule,
+    NegotiationModule,
+    TeamsModule,
+    WorkItemModule,
+    CalendarModule,
+    BidModule,
+    UploadModule,
   ],
 })
 export class AppModule { }

@@ -56,6 +56,42 @@ export class BusinessWorkflow {
   @Column({ type: 'varchar', length: 500, nullable: true, name: 'rfp_file_url' })
   rfpFileUrl: string | null;
 
+  // ─── Contract & Bidding: RFP enrichment fields ────────────────────────────
+
+  @Column({
+    type: 'enum',
+    enum: ['material', 'service', 'subscription'],
+    nullable: true,
+    name: 'workflow_type',
+  })
+  workflowType: 'material' | 'service' | 'subscription' | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  region: string | null;
+
+  @Column({ type: 'simple-array', nullable: true })
+  requirements: string[] | null;
+
+  @Column({ type: 'simple-array', nullable: true })
+  constraints: string[] | null;
+
+  @Column({ type: 'text', nullable: true })
+  conditions: string | null;
+
+  @Column({ type: 'text', nullable: true, name: 'evaluation_criteria' })
+  evaluationCriteria: string | null;
+
+  // ─── Contract lifecycle fields ────────────────────────────────────────────
+
+  @Column({ type: 'date', nullable: true, name: 'contract_start_date' })
+  contractStartDate: Date | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true, name: 'contract_status' })
+  contractStatus: string | null;
+
+  @Column({ type: 'int', default: 0, name: 'progress_step_index' })
+  progressStepIndex: number;
+
   // ─── Phase 5: Test / Acceptation ──────────────────────────────────────────
 
   @Column({ default: false, name: 'is_accepted' })
