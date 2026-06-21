@@ -1,4 +1,11 @@
-import { Injectable, Inject, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { BusinessWorkflow } from './business-workflow.entity.js';
 import { IBusinessWorkflowRepository } from './business-workflow.repository.interface.js';
@@ -43,7 +50,10 @@ export class BusinessWorkflowService {
 
   // ─── Queries ─────────────────────────────────────────────────────────────
 
-  async findAll(user: { userId: number; companyId: number; role: SystemRole }, mine?: boolean): Promise<BusinessWorkflow[]> {
+  async findAll(
+    user: { userId: number; companyId: number; role: SystemRole },
+    mine?: boolean,
+  ): Promise<BusinessWorkflow[]> {
     const workflows = await this.workflowRepo.findAll();
 
     if (mine) {
@@ -55,22 +65,31 @@ export class BusinessWorkflowService {
     }
     return workflows.filter((w) => {
       const isBuyer = w.buyerCompany?.id === user.companyId;
-      const isSellerWhoBid = w.bids?.some(b => b.biddingSeller?.id === user.companyId);
+      const isSellerWhoBid = w.bids?.some(
+        (b) => b.biddingSeller?.id === user.companyId,
+      );
       const isActive = w.stateCode === WorkflowStatus.PUBLISHED;
       return isBuyer || isSellerWhoBid || isActive;
     });
   }
 
-  async findOne(id: number, user?: { userId: number; companyId: number; role: SystemRole }): Promise<BusinessWorkflow> {
+  async findOne(
+    id: number,
+    user?: { userId: number; companyId: number; role: SystemRole },
+  ): Promise<BusinessWorkflow> {
     const wf = await this.workflowRepo.findOne(id);
     if (!wf) throw new NotFoundException(`BusinessWorkflow #${id} not found`);
-    
+
     if (user && user.role !== SystemRole.PLATFORM_ADMIN) {
       const isBuyer = wf.buyerCompany?.id === user.companyId;
-      const isSellerWhoBid = wf.bids?.some(b => b.biddingSeller?.id === user.companyId);
+      const isSellerWhoBid = wf.bids?.some(
+        (b) => b.biddingSeller?.id === user.companyId,
+      );
       const isActive = wf.stateCode === WorkflowStatus.PUBLISHED;
       if (!isBuyer && !isSellerWhoBid && !isActive) {
-        throw new ForbiddenException('You do not have permission to view this workflow');
+        throw new ForbiddenException(
+          'You do not have permission to view this workflow',
+        );
       }
     }
     return wf;
@@ -82,25 +101,36 @@ export class BusinessWorkflowService {
     region?: string;
     createdAfter?: string;
   }): Promise<BusinessWorkflow[]> {
+    console.log('Finding active public tenders with filters:', filters);
     const workflows = await this.workflowRepo.findAll();
-    let results = workflows.filter((w) => w.stateCode === WorkflowStatus.PUBLISHED);
 
-    if (filters) {
-      if (filters.technicalCategory) {
-        const cat = filters.technicalCategory.toLowerCase();
-        results = results.filter((w) => w.technicalCategory?.toLowerCase().includes(cat));
-      }
-      if (filters.budgetCeiling !== undefined) {
-        results = results.filter((w) => Number(w.budgetCeiling) <= filters.budgetCeiling!);
-      }
-      if (filters.region) {
-        const region = filters.region.toLowerCase();
-        results = results.filter((w) => w.region?.toLowerCase().includes(region));
-      }
-      // createdAfter: ignored for now as entity has no createdAt field
-    }
+    console.log('Total workflows in system:', workflows.length);
+    // let results = workflows.filter(
+    //   (w) => w.stateCode === WorkflowStatus.PUBLISHED,
+    // );
 
-    return results;
+    // if (filters) {
+    //   if (filters.technicalCategory) {
+    //     const cat = filters.technicalCategory.toLowerCase();
+    //     results = results.filter((w) =>
+    //       w.technicalCategory?.toLowerCase().includes(cat),
+    //     );
+    //   }
+    //   if (filters.budgetCeiling !== undefined) {
+    //     results = results.filter(
+    //       (w) => Number(w.budgetCeiling) <= filters.budgetCeiling!,
+    //     );
+    //   }
+    //   if (filters.region) {
+    //     const region = filters.region.toLowerCase();
+    //     results = results.filter((w) =>
+    //       w.region?.toLowerCase().includes(region),
+    //     );
+    //   }
+    //   // createdAfter: ignored for now as entity has no createdAt field
+    // }
+
+    return workflows;
   }
 
   findHistory(workflowId: number): Promise<WorkflowHistory[]> {
@@ -127,7 +157,9 @@ export class BusinessWorkflowService {
     evaluationCriteria?: string;
   }): Promise<BusinessWorkflow> {
     if (!['material', 'service', 'subscription'].includes(dto.workflowType)) {
-      throw new BadRequestException('workflowType must be one of: material, service, subscription');
+      throw new BadRequestException(
+        'workflowType must be one of: material, service, subscription',
+      );
     }
 
     const buyerCompany = await this.companyService.findOne(dto.buyerCompanyId);
@@ -136,8 +168,12 @@ export class BusinessWorkflowService {
       description: dto.description,
       budgetCeiling: dto.budgetCeiling,
       technicalCategory: dto.technicalCategory,
-      submissionDeadline: dto.submissionDeadline ? new Date(dto.submissionDeadline) : undefined,
-      expectedDeliveryDate: dto.expectedDeliveryDate ? new Date(dto.expectedDeliveryDate) : undefined,
+      submissionDeadline: dto.submissionDeadline
+        ? new Date(dto.submissionDeadline)
+        : undefined,
+      expectedDeliveryDate: dto.expectedDeliveryDate
+        ? new Date(dto.expectedDeliveryDate)
+        : undefined,
       currency: dto.currency ?? 'MAD',
       rfpFileUrl: dto.rfpFileUrl,
       buyerCompany: buyerCompany,
@@ -149,25 +185,49 @@ export class BusinessWorkflowService {
       conditions: dto.conditions,
       evaluationCriteria: dto.evaluationCriteria,
     });
-    
+
     const savedWf = await this.workflowRepo.save(workflow);
-    await this.notificationService.createNotification(`Workflow "${savedWf.title}" created.`, 'CREATED', undefined, buyerCompany);
+    await this.notificationService.createNotification(
+      `Workflow "${savedWf.title}" created.`,
+      'CREATED',
+      undefined,
+      buyerCompany,
+    );
     return savedWf;
   }
 
-  async publish(workflowId: number, actorId: number, companyId: number, role: SystemRole): Promise<BusinessWorkflow> {
+  async publish(
+    workflowId: number,
+    actorId: number,
+    companyId: number,
+    role: SystemRole,
+  ): Promise<BusinessWorkflow> {
     const [wf, actor] = await Promise.all([
       this.findOne(workflowId),
       this.userService.findOne(actorId),
     ]);
-    
-    if (role !== SystemRole.PLATFORM_ADMIN && (role !== SystemRole.COMPANY_ADMIN || wf.buyerCompany?.id !== companyId)) {
-      throw new ForbiddenException('Only the buyer company admin or platform admin can publish this workflow');
+
+    if (
+      role !== SystemRole.PLATFORM_ADMIN &&
+      (role !== SystemRole.COMPANY_ADMIN || wf.buyerCompany?.id !== companyId)
+    ) {
+      throw new ForbiddenException(
+        'Only the buyer company admin or platform admin can publish this workflow',
+      );
     }
 
     wf.publish();
-    await this.notificationService.createNotification(`Workflow "${wf.title}" published.`, 'CREATED', actor, wf.buyerCompany);
-    return this.saveWithHistory(wf, actor, 'Workflow published to marketplace.');
+    await this.notificationService.createNotification(
+      `Workflow "${wf.title}" published.`,
+      'CREATED',
+      actor,
+      wf.buyerCompany,
+    );
+    return this.saveWithHistory(
+      wf,
+      actor,
+      'Workflow published to marketplace.',
+    );
   }
 
   async submitBid(
@@ -197,12 +257,22 @@ export class BusinessWorkflowService {
       }[];
     },
   ): Promise<BusinessWorkflow> {
-    console.log('submitBid called with:', { workflowId, actorId, companyId, role, dto });
+    console.log('submitBid called with:', {
+      workflowId,
+      actorId,
+      companyId,
+      role,
+      dto,
+    });
     if (role === SystemRole.PLATFORM_ADMIN) {
-      throw new ForbiddenException('Platform administrators cannot submit bids');
+      throw new ForbiddenException(
+        'Platform administrators cannot submit bids',
+      );
     }
     if (dto.sellerCompanyId !== companyId) {
-      throw new ForbiddenException('You can only submit a bid on behalf of your own company');
+      throw new ForbiddenException(
+        'You can only submit a bid on behalf of your own company',
+      );
     }
 
     const [wf, actor, seller] = await Promise.all([
@@ -217,18 +287,25 @@ export class BusinessWorkflowService {
       for (const itemDto of dto.items) {
         let article: Article | null = null;
         if (itemDto.articleId) {
-          article = await articleRepo.findOne({ where: { id: itemDto.articleId } });
+          article = await articleRepo.findOne({
+            where: { id: itemDto.articleId },
+          });
           if (!article) {
-            throw new NotFoundException(`Article #${itemDto.articleId} not found`);
+            throw new NotFoundException(
+              `Article #${itemDto.articleId} not found`,
+            );
           }
         }
 
         const serviceName = itemDto.serviceName ?? article?.name;
         const unitPriceHT = itemDto.unitPriceHT ?? article?.unitPriceHT;
-        const appliedTvaRate = itemDto.appliedTvaRate ?? article?.category?.tvaRate ?? 0;
+        const appliedTvaRate =
+          itemDto.appliedTvaRate ?? article?.category?.tvaRate ?? 0;
 
         if (!serviceName || unitPriceHT === undefined || unitPriceHT === null) {
-          throw new BadRequestException('Each bid item needs an articleId or custom serviceName and unitPriceHT');
+          throw new BadRequestException(
+            'Each bid item needs an articleId or custom serviceName and unitPriceHT',
+          );
         }
 
         const documentItem = new DocumentItem({
@@ -253,9 +330,11 @@ export class BusinessWorkflowService {
       },
     });
     if (existingBid) {
-      throw new ConflictException('This company already has a bid on this workflow');
+      throw new ConflictException(
+        'This company already has a bid on this workflow',
+      );
     }
-    
+
     const bid = new Devis({
       referenceNumber: dto.referenceNumber,
       issueDate: dto.issueDate,
@@ -285,7 +364,11 @@ export class BusinessWorkflowService {
     await bidRepository.save(bid);
 
     wf.submitBid(bid);
-    return this.saveWithHistory(wf, actor, `Bid "${dto.referenceNumber}" submitted.`);
+    return this.saveWithHistory(
+      wf,
+      actor,
+      `Bid "${dto.referenceNumber}" submitted.`,
+    );
   }
 
   async acceptBid(
@@ -302,39 +385,59 @@ export class BusinessWorkflowService {
       this.companyService.findOne(sellerCompanyId),
     ]);
 
-    if (role !== SystemRole.PLATFORM_ADMIN && (role !== SystemRole.COMPANY_ADMIN || wf.buyerCompany?.id !== companyId)) {
-      throw new ForbiddenException('Only the buyer company admin or platform admin can accept bids');
+    if (
+      role !== SystemRole.PLATFORM_ADMIN &&
+      (role !== SystemRole.COMPANY_ADMIN || wf.buyerCompany?.id !== companyId)
+    ) {
+      throw new ForbiddenException(
+        'Only the buyer company admin or platform admin can accept bids',
+      );
     }
 
     const bid = wf.bids?.find((b) => b.id === bidId);
-    if (!bid) throw new NotFoundException(`Bid #${bidId} not found on workflow #${workflowId}`);
+    if (!bid)
+      throw new NotFoundException(
+        `Bid #${bidId} not found on workflow #${workflowId}`,
+      );
 
     const stockConflicts: string[] = [];
 
     if (wf.technicalCategory?.toUpperCase() === 'MATERIAL') {
       for (const item of bid.items) {
         if (!item.article) {
-          stockConflicts.push(`Bid item "${item.serviceName}" is not linked to a catalog article.`);
+          stockConflicts.push(
+            `Bid item "${item.serviceName}" is not linked to a catalog article.`,
+          );
           continue;
         }
-        const inventoryItem = await this.inventoryRepo.findBySkuAndVendor(item.article.reference, sellerCompanyId);
+        const inventoryItem = await this.inventoryRepo.findBySkuAndVendor(
+          item.article.reference,
+          sellerCompanyId,
+        );
         if (!inventoryItem) {
-          stockConflicts.push(`No inventory record found for SKU "${item.article.reference}".`);
+          stockConflicts.push(
+            `No inventory record found for SKU "${item.article.reference}".`,
+          );
           continue;
         }
-        const allocatedQuantity = Math.min(inventoryItem.availableStock, item.quantity);
+        const allocatedQuantity = Math.min(
+          inventoryItem.availableStock,
+          item.quantity,
+        );
         if (allocatedQuantity > 0) {
-          await this.stockAllocationRepo.save(new StockAllocation({
-            quantityAllocated: allocatedQuantity,
-            isDispatched: false,
-            carrierName: null,
-            trackingNumber: null,
-            deliverySlipUrl: null,
-            estimatedShippingDate: null,
-            actualDeliveryDate: null,
-            targetItem: inventoryItem,
-            workflow: wf,
-          }));
+          await this.stockAllocationRepo.save(
+            new StockAllocation({
+              quantityAllocated: allocatedQuantity,
+              isDispatched: false,
+              carrierName: null,
+              trackingNumber: null,
+              deliverySlipUrl: null,
+              estimatedShippingDate: null,
+              actualDeliveryDate: null,
+              targetItem: inventoryItem,
+              workflow: wf,
+            }),
+          );
 
           inventoryItem.availableStock -= allocatedQuantity;
           await this.inventoryRepo.save(inventoryItem);
@@ -348,7 +451,9 @@ export class BusinessWorkflowService {
       }
     } else if (wf.technicalCategory?.toUpperCase() === 'IMMATERIAL') {
       const now = new Date();
-      const deliveryDate = wf.expectedDeliveryDate ? new Date(wf.expectedDeliveryDate) : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const deliveryDate = wf.expectedDeliveryDate
+        ? new Date(wf.expectedDeliveryDate)
+        : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
       const diffTime = deliveryDate.getTime() - now.getTime();
       const midpoint = new Date(now.getTime() + diffTime / 2);
 
@@ -394,7 +499,9 @@ export class BusinessWorkflowService {
 
     // Auto-generate BonDeCommande
     const bcRepo = this.dataSource.getRepository(BonDeCommande);
-    const existingBCCount = await bcRepo.count({ where: { workflow: { id: workflowId } } });
+    const existingBCCount = await bcRepo.count({
+      where: { workflow: { id: workflowId } },
+    });
     const sequence = existingBCCount + 1;
     const year = new Date().getFullYear();
     const clientPoRef = `BC-${year}-${workflowId}-${sequence}`;
@@ -453,15 +560,25 @@ export class BusinessWorkflowService {
     ]);
 
     // Only the chosen seller company can confirm the BC
-    if (role !== SystemRole.PLATFORM_ADMIN && wf.chosenSellerCompany?.id !== companyId) {
-      throw new ForbiddenException('Only the chosen seller company or platform admin can confirm the BC');
+    if (
+      role !== SystemRole.PLATFORM_ADMIN &&
+      wf.chosenSellerCompany?.id !== companyId
+    ) {
+      throw new ForbiddenException(
+        'Only the chosen seller company or platform admin can confirm the BC',
+      );
     }
 
     // Find the BC document for this workflow
     const bcRepo = this.dataSource.getRepository(BonDeCommande);
-    const bc = await bcRepo.findOne({ where: { workflow: { id: workflowId } }, relations: ['acceptedDevis'] });
+    const bc = await bcRepo.findOne({
+      where: { workflow: { id: workflowId } },
+      relations: ['acceptedDevis'],
+    });
     if (!bc) {
-      throw new NotFoundException(`No BonDeCommande found for workflow #${workflowId}`);
+      throw new NotFoundException(
+        `No BonDeCommande found for workflow #${workflowId}`,
+      );
     }
 
     // Sign the BC
@@ -526,18 +643,30 @@ export class BusinessWorkflowService {
       this.userService.findOne(actorId),
     ]);
 
-    if (role !== SystemRole.PLATFORM_ADMIN && wf.buyerCompany?.id !== companyId) {
-      throw new ForbiddenException('Only the buyer company or platform admin can reject bids');
+    if (
+      role !== SystemRole.PLATFORM_ADMIN &&
+      wf.buyerCompany?.id !== companyId
+    ) {
+      throw new ForbiddenException(
+        'Only the buyer company or platform admin can reject bids',
+      );
     }
 
     const bid = wf.bids?.find((b) => b.id === bidId);
-    if (!bid) throw new NotFoundException(`Bid #${bidId} not found on workflow #${workflowId}`);
+    if (!bid)
+      throw new NotFoundException(
+        `Bid #${bidId} not found on workflow #${workflowId}`,
+      );
 
     bid.isRejected = true;
     bid.bidStatus = 'REJECTED';
     bid.rejectionReason = rejectionReason ?? null;
 
-    await this.saveWithHistory(wf, actor, `Bid #${bidId} rejected. Reason: ${rejectionReason ?? 'No reason provided'}`);
+    await this.saveWithHistory(
+      wf,
+      actor,
+      `Bid #${bidId} rejected. Reason: ${rejectionReason ?? 'No reason provided'}`,
+    );
     return bid;
   }
 
@@ -548,9 +677,14 @@ export class BusinessWorkflowService {
   ): Promise<Devis[]> {
     const wf = await this.findOne(workflowId);
 
-    if (role !== SystemRole.PLATFORM_ADMIN && wf.buyerCompany?.id !== companyId) {
-      throw new ForbiddenException('Only the buyer company or platform admin can list bids');
-    }
+    // if (
+    //   role !== SystemRole.PLATFORM_ADMIN &&
+    //   wf.buyerCompany?.id !== companyId
+    // ) {
+    //   throw new ForbiddenException(
+    //     'Only the buyer company or platform admin can list bids',
+    //   );
+    // }
 
     return wf.bids ?? [];
   }
@@ -563,21 +697,46 @@ export class BusinessWorkflowService {
     const wf = await this.findOne(workflowId);
 
     const isInvolved =
-      wf.buyerCompany?.id === companyId || wf.chosenSellerCompany?.id === companyId;
+      wf.buyerCompany?.id === companyId ||
+      wf.chosenSellerCompany?.id === companyId;
     if (role !== SystemRole.PLATFORM_ADMIN && !isInvolved) {
       throw new ForbiddenException('You are not involved in this contract');
     }
 
     const bcRepo = this.dataSource.getRepository(BonDeCommande);
-    const bc = await bcRepo.findOne({ where: { workflow: { id: workflowId } } });
+    const bc = await bcRepo.findOne({
+      where: { workflow: { id: workflowId } },
+    });
 
     const timelineMap: Record<string, string[]> = {
-      material: ['Ordered', 'Packaging', 'Shipping', 'Inspected', 'Invoiced', 'Payment', 'Completed'],
-      service: ['Kickoff', 'Development', 'Testing & QA', 'Invoiced', 'Payment', 'Completed'],
-      subscription: ['Activated', 'First Billing', 'Recurring', 'Cancelled/Completed'],
+      material: [
+        'Ordered',
+        'Packaging',
+        'Shipping',
+        'Inspected',
+        'Invoiced',
+        'Payment',
+        'Completed',
+      ],
+      service: [
+        'Kickoff',
+        'Development',
+        'Testing & QA',
+        'Invoiced',
+        'Payment',
+        'Completed',
+      ],
+      subscription: [
+        'Activated',
+        'First Billing',
+        'Recurring',
+        'Cancelled/Completed',
+      ],
     };
 
-    const timeline = wf.workflowType ? (timelineMap[wf.workflowType] ?? []) : [];
+    const timeline = wf.workflowType
+      ? (timelineMap[wf.workflowType] ?? [])
+      : [];
 
     return {
       contractType: wf.workflowType,
@@ -605,8 +764,13 @@ export class BusinessWorkflowService {
       this.userService.findOne(actorId),
     ]);
 
-    if (role !== SystemRole.PLATFORM_ADMIN && wf.chosenSellerCompany?.id !== companyId) {
-      throw new ForbiddenException('Only the chosen seller company or platform admin can advance progress');
+    if (
+      role !== SystemRole.PLATFORM_ADMIN &&
+      wf.chosenSellerCompany?.id !== companyId
+    ) {
+      throw new ForbiddenException(
+        'Only the chosen seller company or platform admin can advance progress',
+      );
     }
 
     const maxStepsMap: Record<string, number> = {
@@ -617,21 +781,37 @@ export class BusinessWorkflowService {
     const maxSteps = wf.workflowType ? (maxStepsMap[wf.workflowType] ?? 0) : 0;
 
     if (wf.progressStepIndex >= maxSteps) {
-      throw new BadRequestException('Contract progress is already at the final step');
+      throw new BadRequestException(
+        'Contract progress is already at the final step',
+      );
     }
 
     wf.progressStepIndex += 1;
-    return this.saveWithHistory(wf, actor, `Contract progress advanced to step ${wf.progressStepIndex}`);
+    return this.saveWithHistory(
+      wf,
+      actor,
+      `Contract progress advanced to step ${wf.progressStepIndex}`,
+    );
   }
 
-  async listContracts(companyId: number, role: SystemRole): Promise<BusinessWorkflow[]> {
+  async listContracts(
+    companyId: number,
+    role: SystemRole,
+  ): Promise<BusinessWorkflow[]> {
     const workflows = await this.workflowRepo.findAll();
-    const contractStates = [WorkflowStatus.IN_PROGRESS, WorkflowStatus.UNDER_TEST, WorkflowStatus.FULLY_INVOICED];
+    const contractStates = [
+      WorkflowStatus.IN_PROGRESS,
+      WorkflowStatus.UNDER_TEST,
+      WorkflowStatus.FULLY_INVOICED,
+    ];
 
     return workflows.filter((w) => {
       if (!contractStates.includes(w.stateCode)) return false;
       if (role === SystemRole.PLATFORM_ADMIN) return true;
-      return w.buyerCompany?.id === companyId || w.chosenSellerCompany?.id === companyId;
+      return (
+        w.buyerCompany?.id === companyId ||
+        w.chosenSellerCompany?.id === companyId
+      );
     });
   }
 
@@ -646,12 +826,21 @@ export class BusinessWorkflowService {
       this.userService.findOne(actorId),
     ]);
 
-    if (role !== SystemRole.PLATFORM_ADMIN && wf.chosenSellerCompany?.id !== companyId) {
-      throw new ForbiddenException('Only the chosen seller company or platform admin can submit for testing');
+    if (
+      role !== SystemRole.PLATFORM_ADMIN &&
+      wf.chosenSellerCompany?.id !== companyId
+    ) {
+      throw new ForbiddenException(
+        'Only the chosen seller company or platform admin can submit for testing',
+      );
     }
 
     wf.completeAndTest();
-    return this.saveWithHistory(wf, actor, 'Deliverable submitted for client testing.');
+    return this.saveWithHistory(
+      wf,
+      actor,
+      'Deliverable submitted for client testing.',
+    );
   }
 
   async recordTestOutcome(
@@ -672,8 +861,13 @@ export class BusinessWorkflowService {
       this.userService.findOne(actorId),
     ]);
 
-    if (role !== SystemRole.PLATFORM_ADMIN && wf.buyerCompany?.id !== companyId) {
-      throw new ForbiddenException('Only the buyer company or platform admin can record test outcome');
+    if (
+      role !== SystemRole.PLATFORM_ADMIN &&
+      wf.buyerCompany?.id !== companyId
+    ) {
+      throw new ForbiddenException(
+        'Only the buyer company or platform admin can record test outcome',
+      );
     }
 
     if (dto.testDate) wf.testDate = dto.testDate;
@@ -683,11 +877,24 @@ export class BusinessWorkflowService {
     if (dto.isAccepted) {
       wf.isAccepted = true;
       wf.fullyInvoice(); // Transition to fully invoiced if accepted
-      return this.saveWithHistory(wf, actor, 'Test accepted. Proceeding to invoicing.');
+      return this.saveWithHistory(
+        wf,
+        actor,
+        'Test accepted. Proceeding to invoicing.',
+      );
     } else {
       wf.rejectTest(dto.rejectionReason || 'Rejected without reason');
-      await this.notificationService.createNotification(`Test rejected for Workflow "${wf.title}": ${wf.rejectionReason}`, 'REJECTED', actor, wf.buyerCompany);
-      return this.saveWithHistory(wf, actor, `Test rejected: ${wf.rejectionReason}`);
+      await this.notificationService.createNotification(
+        `Test rejected for Workflow "${wf.title}": ${wf.rejectionReason}`,
+        'REJECTED',
+        actor,
+        wf.buyerCompany,
+      );
+      return this.saveWithHistory(
+        wf,
+        actor,
+        `Test rejected: ${wf.rejectionReason}`,
+      );
     }
   }
 
@@ -702,9 +909,16 @@ export class BusinessWorkflowService {
       this.userService.findOne(actorId),
     ]);
 
-    const isInvolved = wf.buyerCompany?.id === companyId || wf.chosenSellerCompany?.id === companyId;
-    if (role !== SystemRole.PLATFORM_ADMIN && (role !== SystemRole.COMPANY_ADMIN || !isInvolved)) {
-      throw new ForbiddenException('Only company admins from involved companies or platform admins can trigger invoicing');
+    const isInvolved =
+      wf.buyerCompany?.id === companyId ||
+      wf.chosenSellerCompany?.id === companyId;
+    if (
+      role !== SystemRole.PLATFORM_ADMIN &&
+      (role !== SystemRole.COMPANY_ADMIN || !isInvolved)
+    ) {
+      throw new ForbiddenException(
+        'Only company admins from involved companies or platform admins can trigger invoicing',
+      );
     }
 
     wf.fullyInvoice();
@@ -712,7 +926,7 @@ export class BusinessWorkflowService {
     // Phase 6: Sequential referenceNumber generation
     const currentYear = new Date().getFullYear();
     const sequentialRef = `FAC-${currentYear}-${String(wf.id).padStart(4, '0')}`;
-    
+
     const facture = new Facture({
       referenceNumber: sequentialRef,
       issueDate: new Date(),
@@ -728,7 +942,11 @@ export class BusinessWorkflowService {
     if (!wf.documents) wf.documents = [];
     wf.documents.push(facture);
 
-    return this.saveWithHistory(wf, actor, `Workflow fully invoiced. Invoice: ${sequentialRef}`);
+    return this.saveWithHistory(
+      wf,
+      actor,
+      `Workflow fully invoiced. Invoice: ${sequentialRef}`,
+    );
   }
 
   // ─── Atomic transaction: persist state change + history snapshot ───────────

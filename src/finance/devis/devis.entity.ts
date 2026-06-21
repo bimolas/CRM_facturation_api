@@ -1,6 +1,7 @@
 import { ChildEntity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Document } from '../common/document.entity.js';
 import { Company } from '../../identity/company/company.entity.js';
+import { BusinessWorkflow } from 'src/marketplace/workflow/business-workflow.entity.js';
 
 @ChildEntity('DEVIS')
 export class Devis extends Document {

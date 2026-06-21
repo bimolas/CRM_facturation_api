@@ -13,7 +13,12 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import {
-  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
 } from '@nestjs/swagger';
 import { UserService } from './user.service.js';
 import { User } from './user.entity.js';
@@ -27,14 +32,15 @@ import { CreateUserDto, UpdateUserDto } from './dto/user.dto.js';
 @ApiTags('Users')
 @ApiBearerAuth()
 @Controller('users')
-//@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
   @ApiOperation({
     summary: 'Get all users',
-    description: 'Retrieve users based on current user permissions. Platform admins see all users, company admins see their company users, regular users see only themselves.',
+    description:
+      'Retrieve users based on current user permissions. Platform admins see all users, company admins see their company users, regular users see only themselves.',
   })
   @ApiResponse({
     status: 200,
@@ -43,6 +49,7 @@ export class UserController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async findAll(@CurrentUser() currentUser: any): Promise<User[]> {
+    console.log('UserController.findAll called, currentUser:', currentUser);
     const allUsers = await this.userService.findAll();
     if (currentUser.role === SystemRole.PLATFORM_ADMIN) {
       return allUsers;
@@ -57,7 +64,8 @@ export class UserController {
   @Get(':id')
   @ApiOperation({
     summary: 'Get user by ID',
-    description: 'Retrieve a specific user with access control based on user role',
+    description:
+      'Retrieve a specific user with access control based on user role',
   })
   @ApiParam({
     name: 'id',
@@ -223,4 +231,3 @@ export class UserController {
     return this.userService.remove(id);
   }
 }
-

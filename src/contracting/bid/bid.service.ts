@@ -17,11 +17,15 @@ export class BidService {
   ) {}
 
   async getMyBids(companyId: number): Promise<object[]> {
+    console.log("Fetching bids for Company ID:", companyId);
+
     const bids = await this.devisRepo.find({
       where: { biddingSeller: { id: companyId } },
       relations: ['biddingSeller', 'workflow', 'workflow.buyerCompany'],
       order: { id: 'DESC' },
     });
+
+    console.log(`Found ${bids.length} bids for Company ID ${companyId}`);
 
     const result = await Promise.all(
       bids.map(async (bid) => {

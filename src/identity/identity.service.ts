@@ -64,10 +64,12 @@ export class IdentityService {
   }
 
   async getUser(id: number): Promise<User | null> {
+    console.log(`Fetching user with ID: ${id}`);
     return this.dataSource.getRepository(User).findOneBy({ id });
   }
 
   async getCompany(id: number): Promise<Company | null> {
+    console.log(`Fetching company with ID: ${id}`);
     return this.dataSource.getRepository(Company).findOneBy({ id });
   }
 }

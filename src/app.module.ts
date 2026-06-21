@@ -52,7 +52,7 @@ import { PaymentInstallment } from './contracting/payment/payment-installment.en
   imports: [
     // ── Database Connection ────────────────────────────────────────────────
     TypeOrmModule.forRoot({
-      type: 'mysql',            // MariaDB uses the mysql2 driver
+      type: 'mysql',
       host: process.env.DB_HOST ?? 'localhost',
       port: Number(process.env.DB_PORT ?? 3306),
       username: process.env.DB_USERNAME ?? 'root',
@@ -86,7 +86,7 @@ import { PaymentInstallment } from './contracting/payment/payment-installment.en
         CalendarEvent,
         PaymentInstallment,
       ],
-      synchronize: process.env.TYPEORM_SYNCHRONIZE === 'true',
+      synchronize: true,
       logging: process.env.NODE_ENV !== 'production',
     }),
     ServeStaticModule.forRoot({
@@ -112,4 +112,4 @@ import { PaymentInstallment } from './contracting/payment/payment-installment.en
     UploadModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

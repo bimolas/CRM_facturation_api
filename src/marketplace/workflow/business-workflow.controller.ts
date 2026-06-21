@@ -1,8 +1,22 @@
 import {
-  Controller, Get, Post, Patch, Param, Body, ParseIntPipe, Query, UseGuards,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Body,
+  ParseIntPipe,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiQuery,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { BusinessWorkflowService } from './business-workflow.service.js';
 import { BusinessWorkflow } from './business-workflow.entity.js';
@@ -33,7 +47,12 @@ export class BusinessWorkflowController {
     summary: 'Get all workflows',
     description: 'Retrieve all workflows accessible to the authenticated user',
   })
-  @ApiQuery({ name: 'mine', required: false, type: Boolean, description: 'When true, return only workflows where the user is the buyer' })
+  @ApiQuery({
+    name: 'mine',
+    required: false,
+    type: Boolean,
+    description: 'When true, return only workflows where the user is the buyer',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of workflows retrieved successfully',
@@ -55,7 +74,12 @@ export class BusinessWorkflowController {
   @ApiQuery({ name: 'technicalCategory', required: false, type: String })
   @ApiQuery({ name: 'budgetCeiling', required: false, type: Number })
   @ApiQuery({ name: 'region', required: false, type: String })
-  @ApiQuery({ name: 'createdAfter', required: false, type: String, description: 'ISO date string' })
+  @ApiQuery({
+    name: 'createdAfter',
+    required: false,
+    type: String,
+    description: 'ISO date string',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of active tenders',
@@ -69,7 +93,8 @@ export class BusinessWorkflowController {
   ): Promise<BusinessWorkflow[]> {
     return this.workflowService.findActivePublicTenders({
       technicalCategory,
-      budgetCeiling: budgetCeiling !== undefined ? Number(budgetCeiling) : undefined,
+      budgetCeiling:
+        budgetCeiling !== undefined ? Number(budgetCeiling) : undefined,
       region,
       createdAfter,
     });
@@ -78,7 +103,8 @@ export class BusinessWorkflowController {
   @Get('contracts')
   @ApiOperation({
     summary: 'List contracts',
-    description: 'Return all workflows in contract states (IN_PROGRESS, UNDER_TEST, FULLY_INVOICED) for the current user\'s company',
+    description:
+      "Return all workflows in contract states (IN_PROGRESS, UNDER_TEST, FULLY_INVOICED) for the current user's company",
   })
   @ApiResponse({
     status: 200,
@@ -116,7 +142,8 @@ export class BusinessWorkflowController {
   @Get(':id/history')
   @ApiOperation({
     summary: 'Get workflow history',
-    description: 'Retrieve the complete history of a workflow including all state transitions',
+    description:
+      'Retrieve the complete history of a workflow including all state transitions',
   })
   @ApiParam({
     name: 'id',
@@ -140,7 +167,8 @@ export class BusinessWorkflowController {
   @Get(':id/bids')
   @ApiOperation({
     summary: 'List bids for a workflow',
-    description: 'Return all bids submitted to a workflow. Only accessible by the buyer company or platform admin.',
+    description:
+      'Return all bids submitted to a workflow. Only accessible by the buyer company or platform admin.',
   })
   @ApiParam({ name: 'id', type: 'number', description: 'Workflow ID' })
   @ApiResponse({ status: 200, description: 'List of bids', type: [Devis] })
@@ -155,7 +183,8 @@ export class BusinessWorkflowController {
   @Get(':id/contract')
   @ApiOperation({
     summary: 'Get contract detail',
-    description: 'Return full contract detail for a workflow. Only accessible by involved companies or platform admin.',
+    description:
+      'Return full contract detail for a workflow. Only accessible by involved companies or platform admin.',
   })
   @ApiParam({ name: 'id', type: 'number', description: 'Workflow ID' })
   @ApiResponse({ status: 200, description: 'Contract detail' })
@@ -164,13 +193,18 @@ export class BusinessWorkflowController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
   ): Promise<object> {
-    return this.workflowService.getContractDetail(id, user.companyId, user.role);
+    return this.workflowService.getContractDetail(
+      id,
+      user.companyId,
+      user.role,
+    );
   }
 
   @Post(':id/bids/:bidId/reject')
   @ApiOperation({
     summary: 'Reject a bid',
-    description: 'Reject a specific bid on a workflow. Only the buyer company or platform admin can reject bids.',
+    description:
+      'Reject a specific bid on a workflow. Only the buyer company or platform admin can reject bids.',
   })
   @ApiParam({ name: 'id', type: 'number', description: 'Workflow ID' })
   @ApiParam({ name: 'bidId', type: 'number', description: 'Bid ID' })
@@ -184,39 +218,66 @@ export class BusinessWorkflowController {
     @Body() body: { rejectionReason?: string },
     @CurrentUser() user: any,
   ): Promise<Devis> {
-    return this.workflowService.rejectBid(id, bidId, user.userId, user.companyId, user.role, body.rejectionReason);
+    return this.workflowService.rejectBid(
+      id,
+      bidId,
+      user.userId,
+      user.companyId,
+      user.role,
+      body.rejectionReason,
+    );
   }
 
   @Post(':id/bc/confirm')
   @ApiOperation({
     summary: 'Confirm the Bon de Commande',
-    description: 'Seller confirms the BC to establish the contract. Only the chosen seller company or platform admin can confirm.',
+    description:
+      'Seller confirms the BC to establish the contract. Only the chosen seller company or platform admin can confirm.',
   })
   @ApiParam({ name: 'id', type: 'number', description: 'Workflow ID' })
-  @ApiResponse({ status: 200, description: 'BC confirmed and contract established', type: BusinessWorkflow })
+  @ApiResponse({
+    status: 200,
+    description: 'BC confirmed and contract established',
+    type: BusinessWorkflow,
+  })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'BC not found' })
   confirmBC(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
   ): Promise<BusinessWorkflow> {
-    return this.workflowService.confirmBC(id, user.userId, user.companyId, user.role);
+    return this.workflowService.confirmBC(
+      id,
+      user.userId,
+      user.companyId,
+      user.role,
+    );
   }
 
   @Patch(':id/contract/progress')
   @ApiOperation({
     summary: 'Advance contract progress',
-    description: 'Increment the contract progress step. Only the chosen seller company or platform admin can advance progress.',
+    description:
+      'Increment the contract progress step. Only the chosen seller company or platform admin can advance progress.',
   })
   @ApiParam({ name: 'id', type: 'number', description: 'Workflow ID' })
-  @ApiResponse({ status: 200, description: 'Progress advanced', type: BusinessWorkflow })
+  @ApiResponse({
+    status: 200,
+    description: 'Progress advanced',
+    type: BusinessWorkflow,
+  })
   @ApiResponse({ status: 400, description: 'Already at final step' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   advanceProgress(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
   ): Promise<BusinessWorkflow> {
-    return this.workflowService.advanceProgress(id, user.userId, user.companyId, user.role);
+    return this.workflowService.advanceProgress(
+      id,
+      user.userId,
+      user.companyId,
+      user.role,
+    );
   }
 
   @Post()
@@ -256,7 +317,8 @@ export class BusinessWorkflowController {
   @Post(':id/publish')
   @ApiOperation({
     summary: 'Publish a workflow',
-    description: 'Publish a workflow to make it visible and available for bidding',
+    description:
+      'Publish a workflow to make it visible and available for bidding',
   })
   @ApiParam({
     name: 'id',
@@ -273,13 +335,19 @@ export class BusinessWorkflowController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
   ): Promise<BusinessWorkflow> {
-    return this.workflowService.publish(id, user.userId, user.companyId, user.role);
+    return this.workflowService.publish(
+      id,
+      user.userId,
+      user.companyId,
+      user.role,
+    );
   }
 
   @Post(':id/bids')
   @ApiOperation({
     summary: 'Submit a bid to a workflow',
-    description: 'Submit a vendor bid with items and terms for a published workflow',
+    description:
+      'Submit a vendor bid with items and terms for a published workflow',
   })
   @ApiParam({
     name: 'id',
@@ -310,18 +378,25 @@ export class BusinessWorkflowController {
       throw new Error('Seller company ID is required');
     }
 
-    return this.workflowService.submitBid(id, user.userId, user.companyId, user.role, {
-      ...dto,
-      sellerCompanyId,
-      issueDate: new Date(dto.issueDate),
-      validUntil: new Date(dto.validUntil),
-    });
+    return this.workflowService.submitBid(
+      id,
+      user.userId,
+      user.companyId,
+      user.role,
+      {
+        ...dto,
+        sellerCompanyId,
+        issueDate: new Date(dto.issueDate),
+        validUntil: new Date(dto.validUntil),
+      },
+    );
   }
 
   @Post(':id/bids/accept')
   @ApiOperation({
     summary: 'Accept a bid',
-    description: 'Accept a vendor bid and move workflow to the acceptance stage',
+    description:
+      'Accept a vendor bid and move workflow to the acceptance stage',
   })
   @ApiParam({
     name: 'id',
@@ -373,7 +448,12 @@ export class BusinessWorkflowController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
   ): Promise<BusinessWorkflow> {
-    return this.workflowService.completeAndTest(id, user.userId, user.companyId, user.role);
+    return this.workflowService.completeAndTest(
+      id,
+      user.userId,
+      user.companyId,
+      user.role,
+    );
   }
 
   @Post(':id/test-outcome')
@@ -401,10 +481,16 @@ export class BusinessWorkflowController {
     @Body() dto: RecordTestOutcomeDto,
     @CurrentUser() user: any,
   ): Promise<BusinessWorkflow> {
-    return this.workflowService.recordTestOutcome(id, user.userId, user.companyId, user.role, {
-      ...dto,
-      testDate: dto.testDate ? new Date(dto.testDate) : undefined,
-    });
+    return this.workflowService.recordTestOutcome(
+      id,
+      user.userId,
+      user.companyId,
+      user.role,
+      {
+        ...dto,
+        testDate: dto.testDate ? new Date(dto.testDate) : undefined,
+      },
+    );
   }
 
   @Post(':id/invoice')
@@ -427,6 +513,11 @@ export class BusinessWorkflowController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
   ): Promise<BusinessWorkflow> {
-    return this.workflowService.fullyInvoice(id, user.userId, user.companyId, user.role);
+    return this.workflowService.fullyInvoice(
+      id,
+      user.userId,
+      user.companyId,
+      user.role,
+    );
   }
 }

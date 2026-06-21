@@ -12,14 +12,17 @@ export class RolesGuard implements CanActivate {
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
+    
+    // If no roles are required for this route, let them in
     if (!requiredRoles) {
       return true;
     }
-    return true;
-    // const { user } = context.switchToHttp().getRequest();
-    // if (!user) {
-    //   return false;
-    // }
-    // return requiredRoles.some((role) => user.role === role);
+
+    const { user } = context.switchToHttp().getRequest();
+    if (!user) {
+      return false; // Blocks users if they aren't authenticated but trying to hit a restricted role route
+    }
+    
+    return requiredRoles.some((role) => user.role === role);
   }
 }
