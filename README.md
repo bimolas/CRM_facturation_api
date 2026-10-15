@@ -1,98 +1,163 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# CRM & Facturation API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+> A modular backend for customer relationship and invoicing workflows, built with NestJS, TypeScript, TypeORM and MySQL.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+[![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?style=flat-square&logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?style=flat-square&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![TypeORM](https://img.shields.io/badge/TypeORM-ORM-FE0803?style=flat-square)](https://typeorm.io/)
+[![Swagger](https://img.shields.io/badge/Swagger-OpenAPI-85EA2D?style=flat-square&logo=swagger&logoColor=black)](https://swagger.io/)
 
-## Description
+## Overview
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+CRM & Facturation API is a modular NestJS backend organized around business domains instead of a single monolithic feature folder.
 
-## Project setup
+The source tree includes dedicated areas for authentication, identity, catalog, contracting, finance, execution, calendar, teams, notifications, messaging and marketplace concerns. The application uses TypeORM with MySQL for persistence and includes JWT-based authentication, request validation, Swagger/OpenAPI documentation and file-upload support.
 
-```bash
-$ npm install
+## Architecture
+
+```text
+                         HTTP / REST
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │    NestJS API    │
+                    └────────┬─────────┘
+                             │
+          ┌──────────────────┼──────────────────┐
+          ▼                  ▼                  ▼
+     Authentication       Domains          Shared Layer
+     JWT / Passport    ┌─────────────┐     Validation
+                       │ Identity    │     Common utilities
+                       │ Catalog     │
+                       │ Contracting │
+                       │ Finance     │
+                       │ Execution   │
+                       │ Calendar    │
+                       │ Teams       │
+                       │ Messaging   │
+                       │ Notification│
+                       │ Marketplace │
+                       └──────┬──────┘
+                              │
+                              ▼
+                       ┌────────────┐
+                       │ TypeORM    │
+                       └─────┬──────┘
+                             ▼
+                         ┌───────┐
+                         │ MySQL │
+                         └───────┘
 ```
 
-## Compile and run the project
+## Domain Modules
 
-```bash
-# development
-$ npm run start
+| Module | Responsibility |
+|---|---|
+| `auth` | Authentication and JWT access control |
+| `identity` | Identity-related domain functionality |
+| `catalog` | Catalog data and management |
+| `contracting` | Contract-related workflows |
+| `finance` | Financial and invoicing concerns |
+| `execution` | Execution/workflow domain |
+| `calendar` | Calendar-related operations |
+| `teams` | Team management |
+| `message` | Messaging capabilities |
+| `notification` | Notification handling |
+| `marketplace` | Marketplace-related domain functionality |
+| `domain-services` | Shared business-domain services |
+| `common` | Cross-cutting utilities and shared code |
 
-# watch mode
-$ npm run start:dev
+## Tech Stack
 
-# production mode
-$ npm run start:prod
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js |
+| Framework | NestJS 11 |
+| Language | TypeScript 5 |
+| Persistence | TypeORM 0.3 + MySQL 2 |
+| Authentication | Passport + JWT + bcrypt |
+| API documentation | Swagger / OpenAPI |
+| Validation | class-validator + class-transformer |
+| File handling | Multer |
+| Testing | Jest + Supertest |
+| Tooling | ESLint + Prettier |
+
+## Project Structure
+
+```text
+src/
+├── auth/
+├── identity/
+├── catalog/
+├── contracting/
+├── finance/
+├── execution/
+├── calendar/
+├── teams/
+├── message/
+├── notification/
+├── marketplace/
+├── domain-services/
+├── common/
+├── app.module.ts
+└── main.ts
 ```
 
-## Run tests
+## Getting Started
+
+### Requirements
+
+- Node.js
+- npm
+- MySQL
+
+### Install
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm install
 ```
 
-## Deployment
+### Configure the database
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Create the required environment configuration for your MySQL connection and authentication settings before starting the application.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Do not commit production credentials or JWT secrets to the repository.
+
+### Development
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run start:dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Production build
 
-## Resources
+```bash
+npm run build
+npm run start:prod
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+## API Documentation
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+The application includes Swagger/OpenAPI support. Once the API is running, open the Swagger endpoint configured by `src/main.ts` to explore the available HTTP operations.
 
-## Support
+## Testing
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+# Unit tests
+npm run test
 
-## Stay in touch
+# End-to-end tests
+npm run test:e2e
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# Coverage
+npm run test:cov
+```
 
-## License
+## Engineering Focus
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is useful as a backend architecture example because the code is organized around business domains rather than a collection of unrelated controllers. It also demonstrates common production backend concerns: authentication, authorization boundaries, validation, persistence, API documentation, testing and separation of domain responsibilities.
+
+## Status
+
+Active development / learning project. The repository is intentionally kept modular so additional CRM and financial workflows can be added without turning the API into one large feature module.
